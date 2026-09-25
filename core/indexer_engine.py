@@ -606,7 +606,8 @@ class IndexerEngine:
     def generate_indexed_files(self, analysis_result: AnalysisResult, output_folder: str) -> int:
         """
         Phase 2: Reads each original file from Input 1, filters out blank/null/0 date rows,
-        maps the Index column using vectorized lookups (repeating index for duplicate matching items),
+        maps the Index column using vectorized lookups (only the first matching line item
+        for a given key gets the Index; later line items sharing that key are left blank),
         and saves it in the exact nested directory structure inside output_folder.
         """
         self.is_cancelled = False
@@ -654,8 +655,17 @@ class IndexerEngine:
             # Vectorized column arrays
             file_col_arrays = prepare_normalized_column_arrays(df_curr, file_match_cols)
 
-            # Fast mapping via dict lookup (repeats index for duplicate matching items)
-            mapped_indices = [lookup.get(k, "") for k in zip(*file_col_arrays)]
+            # Fast mapping via dict lookup: only the first line item for a given key
+            # gets the Index; later duplicates of the same key are left blank.
+            mapped_indices = []
+            seen_keys = set()
+            for k in zip(*file_col_arrays):
+                val = lookup.get(k, "")
+                if val and k not in seen_keys:
+                    mapped_indices.append(val)
+                    seen_keys.add(k)
+                else:
+                    mapped_indices.append("")
 
             # Add or update Index column
             df_curr[index_col_name] = mapped_indices

@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Local machine-specific runtime config (contains local file paths)
+config.json
+turbo_config.json
+
+# Sample/test fixture data
+sample_data/
+
+# Build/output artifacts
+dist/
+build/
+*.spec
+Output/

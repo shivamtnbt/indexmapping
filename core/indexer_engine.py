@@ -77,13 +77,17 @@ def prepare_normalized_column_arrays(df: pd.DataFrame, col_names: List[Optional[
         if c is not None and c in df.columns:
             s = df[c].fillna("").astype(str)
 
-            # Fold the Unicode replacement character (from an upstream export that
-            # misread CP1252 bytes as UTF-8 and lost the original character) and
-            # lookalike punctuation (non-breaking space, curly quotes, en/em dashes
-            # -- common when SAP text gets pasted through Excel) to plain
-            # equivalents, so two otherwise-identical values don't fail to match
-            # purely over which mangled character ended up on which side.
-            s = s.str.replace("[� ]+", " ", regex=True)
+            # Drop the Unicode replacement character (from an upstream export that
+            # misread CP1252 bytes as UTF-8 and lost the original character) --
+            # it can stand for ANY lost character (space, apostrophe, dash...),
+            # so it's dropped entirely, same as quotes/apostrophes are stripped
+            # below, rather than guessed as a space. Non-breaking space is
+            # dropped the same way for consistency. Lookalike punctuation (curly
+            # quotes, en/em dashes -- common when SAP text gets pasted through
+            # Excel) is folded to its plain equivalent so two otherwise-identical
+            # values don't fail to match purely over which mangled character
+            # ended up on which side.
+            s = s.str.replace("[� ]+", "", regex=True)
             s = s.str.replace("[‘’]", "'", regex=True)
             s = s.str.replace("[“”]", '"', regex=True)
             s = s.str.replace("[–—]", "-", regex=True)

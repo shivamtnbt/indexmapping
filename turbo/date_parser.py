@@ -110,11 +110,17 @@ def get_normalization_macro_sql() -> str:
       - NaN / NULL / None / Empty handling -> ''
       - "Noise punctuation" folding: the Unicode replacement character (from an
         upstream export that misread CP1252 bytes as UTF-8 and lost the original
-        character -- common in older consolidated exports) and lookalike
-        punctuation (non-breaking space, curly quotes, en/em dashes -- common
-        when SAP text fields get pasted through Excel) are folded to a plain
-        space/quote/hyphen so two otherwise-identical descriptions don't fail to
-        match purely over which mangled character ended up on which side.
+        character -- common in older consolidated exports) is dropped entirely,
+        since it can stand for ANY lost character (a space, an apostrophe, a
+        dash...) and there's no way to know which after the fact; dropping it
+        matches how quotes/apostrophes are already stripped elsewhere below, so
+        a description that lost a non-breaking space still lines up against one
+        that lost an apostrophe at a different spot. Non-breaking space is
+        dropped the same way for consistency. Lookalike punctuation (curly
+        quotes, en/em dashes -- common when SAP text gets pasted through Excel)
+        is folded to its plain equivalent so two otherwise-identical
+        descriptions don't fail to match purely over which mangled character
+        ended up on which side.
     """
     # Built as real Unicode characters (not regex escapes) so DuckDB's RE2 engine
     # matches them literally regardless of locale.
@@ -123,7 +129,7 @@ def get_normalization_macro_sql() -> str:
     curly_single = "‘’"
     curly_double = "“”"
     dashes = "–—"
-    space_class = f"[{replacement_char}{nbsp}]+"
+    drop_class = f"[{replacement_char}{nbsp}]+"
     quote_class = f"[{curly_single}]"
     dquote_class = f"[{curly_double}]"
     dash_class = f"[{dashes}]"
@@ -139,7 +145,7 @@ def get_normalization_macro_sql() -> str:
                         LOWER(TRIM(REPLACE(REPLACE(REPLACE(
                             TRIM(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(
                                 CAST(v AS VARCHAR),
-                                '{space_class}', ' ', 'g'),
+                                '{drop_class}', '', 'g'),
                                 '{quote_class}', chr(39), 'g'),
                                 '{dquote_class}', chr(34), 'g'),
                                 '{dash_class}', '-', 'g')),
@@ -162,7 +168,7 @@ def get_normalization_macro_sql() -> str:
                             LOWER(TRIM(REPLACE(REPLACE(REPLACE(
                                 TRIM(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(
                                     CAST(v AS VARCHAR),
-                                    '{space_class}', ' ', 'g'),
+                                    '{drop_class}', '', 'g'),
                                     '{quote_class}', chr(39), 'g'),
                                     '{dquote_class}', chr(34), 'g'),
                                     '{dash_class}', '-', 'g')),

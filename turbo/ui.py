@@ -666,7 +666,7 @@ class TurboPBIIndexerApp(ctk.CTk):
             f"• Target Output Folder: {out_folder}\n"
             f"• Total Files: {self.analysis_result.total_input1_files}\n"
             f"• Valid Records: {self.analysis_result.total_input1_rows:,}\n"
-            f"• Multiple matching line items will repeat the Index.\n\n"
+            f"• Only the first matching line item per key gets the Index; later duplicates are left blank.\n\n"
             f"Proceed?"
         )
         if not messagebox.askyesno("Confirm Turbo Generation", msg):

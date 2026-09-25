@@ -159,9 +159,9 @@ class TestIndexerEndToEnd(unittest.TestCase):
         self.assertEqual(len(filtered_df), 2)
         self.assertListEqual(list(filtered_df["Doc No"]), ["1", "11"])
 
-    def test_duplicate_line_items_index_repeats(self):
+    def test_duplicate_line_items_index_does_not_repeat(self):
         # When Input 1 has multiple identical line items matching the index file,
-        # all of them should receive the matching Index
+        # only the first one should receive the matching Index; later duplicates are blank
         sub = self.input_folder / "DupTest"
         sub.mkdir(parents=True, exist_ok=True)
         dup_file = sub / "dup_items.txt"
@@ -193,7 +193,7 @@ class TestIndexerEndToEnd(unittest.TestCase):
         self.assertTrue(out_file.exists())
         df_res = pd.read_csv(out_file, sep="\t", dtype=str)
         self.assertEqual(len(df_res), 3)  # filtered row excluded
-        self.assertEqual(list(df_res["Index"]), ["IDX-REPEAT-999", "IDX-REPEAT-999", "IDX-REPEAT-999"])
+        self.assertEqual(list(df_res["Index"].fillna("")), ["IDX-REPEAT-999", "", ""])
 
     def test_option1_abs_value_matching_quantities_and_net_values(self):
         # Credit Note where SAP dump has positive Qty and Net value, but Consolidated Index has negative Qty and Net value

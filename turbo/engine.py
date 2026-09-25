@@ -782,7 +782,8 @@ class TurboIndexerEngine:
     def generate_indexed_files(self, analysis_result: TurboAnalysisResult, output_folder: str) -> int:
         """
         Phase 2: Ultra-fast generation using DuckDB C++ COPY streams.
-        Writes all output files with matching Index column repeated for duplicate line items,
+        Writes all output files with the Index column set only on the first matching
+        line item for a given key; later line items sharing that key are left blank,
         preserving nested subfolder hierarchy.
         """
         start_time = time.time()
@@ -873,13 +874,20 @@ class TurboIndexerEngine:
                 WHERE {date_filter_clause};
             """)
 
-            # Join with index_lookup to attach Index column
+            # Join with index_lookup to attach Index column.
+            # Only the first matching line item (by original row order) for a given
+            # key gets the Index value; later line items sharing the same key are
+            # left blank instead of repeating it.
             con.execute("DROP TABLE IF EXISTS file_joined_out;")
             con.execute(f"""
-                CREATE TEMP TABLE file_joined_out AS 
-                SELECT 
+                CREATE TEMP TABLE file_joined_out AS
+                SELECT
                     r.* EXCLUDE (_orig_row_id, {", ".join(k_cols_list)}),
-                    COALESCE(l.mapped_index, '') AS "Index"
+                    CASE
+                        WHEN l.mapped_index IS NULL THEN ''
+                        WHEN ROW_NUMBER() OVER (PARTITION BY {", ".join(k_cols_list)} ORDER BY r._orig_row_id) = 1 THEN l.mapped_index
+                        ELSE ''
+                    END AS "Index"
                 FROM valid_file_out r
                 LEFT JOIN index_lookup l
                   ON {join_cond_str.replace('c.', 'r.')}

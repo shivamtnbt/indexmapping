@@ -89,9 +89,9 @@ class TestTurboEngineEndToEnd(unittest.TestCase):
         self.assertEqual(len(df_out1), 4)
         self.assertIn("Index", df_out1.columns)
         self.assertEqual(df_out1.loc[0, "Index"], "IDX-001")
-        # Check duplicate line items repeat the index!
+        # Only the first matching line item gets the Index; the duplicate is left blank.
         self.assertEqual(df_out1.loc[1, "Index"], "IDX-002")
-        self.assertEqual(df_out1.loc[2, "Index"], "IDX-002")
+        self.assertTrue(pd.isna(df_out1.loc[2, "Index"]) or df_out1.loc[2, "Index"] == "")
         # Unmatched row
         self.assertTrue(pd.isna(df_out1.loc[3, "Index"]) or df_out1.loc[3, "Index"] == "")
 

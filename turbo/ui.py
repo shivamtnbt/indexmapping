@@ -666,8 +666,7 @@ class TurboPBIIndexerApp(ctk.CTk):
             f"• Target Output Folder: {out_folder}\n"
             f"• Total Files: {self.analysis_result.total_input1_files}\n"
             f"• Valid Records: {self.analysis_result.total_input1_rows:,}\n"
-            f"• Rows sharing the same match key get the same Index (the first\n"
-            f"  matching row's Index is used for all of them).\n\n"
+            f"• Multiple matching line items will repeat the Index.\n\n"
             f"Proceed?"
         )
         if not messagebox.askyesno("Confirm Turbo Generation", msg):

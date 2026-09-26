@@ -885,7 +885,7 @@ class TurboIndexerEngine:
                     r.* EXCLUDE (_orig_row_id, {", ".join(k_cols_list)}),
                     CASE
                         WHEN l.mapped_index IS NULL THEN ''
-                        WHEN ROW_NUMBER() OVER (PARTITION BY {", ".join(k_cols_list)} ORDER BY r._orig_row_id) = 1 THEN l.mapped_index
+                        WHEN ROW_NUMBER() OVER (PARTITION BY {", ".join(f"r.{c}" for c in k_cols_list)} ORDER BY r._orig_row_id) = 1 THEN l.mapped_index
                         ELSE ''
                     END AS "Index"
                 FROM valid_file_out r
